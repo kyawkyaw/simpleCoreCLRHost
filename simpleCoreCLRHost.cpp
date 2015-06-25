@@ -92,9 +92,6 @@ int main( int argc, char* argv[]) {
 
   if ( argc != 5 ) {
     std::cout << "READ README.md !" << std::endl;
-    std::cout << "Usage:" << std::endl;
-    std::cout << "./a.out DLL_PATH ASSEMBLY_PATH ENTRY_TYPE ENTRY_NAME" << std::endl;
-    std::cout << "ALL PATHs must be relative! ASSEMBLY cannot be in the same DIR as DLLS!" << std::endl;
     return 0;
   }
 
@@ -130,12 +127,12 @@ int main( int argc, char* argv[]) {
   assemblyName = assemblyName.substr( 0, assemblyName.size()-4 );
 
   int exitCode = runFromEntryPoint(
-                          cwd+std::string(argv[0]),
-                          cwd+std::string(argv[1]),
-                          cwd+std::string(argv[2]),
-                          assemblyName, // "Hello, Version=0.0.0.0"
-                          std::string(argv[3]), // "Hello"
-                          std::string(argv[4])); // "HelloWorld"
+                          cwd+std::string(argv[0]), // absolute path to this exe
+                          std::string(argv[1]),     // absolute path to coreCLR DLLs
+                          cwd+std::string(argv[2]), // absolute path to DLL to run
+                          assemblyName,
+                          std::string(argv[3]),
+                          std::string(argv[4]));
   std::cout << "Exit Code: " << exitCode << std::endl;
   return 0;
 }
