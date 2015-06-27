@@ -31,7 +31,10 @@
 
   *ENTRY_POINT_NAME* - method name to run from given assembly.
 
-  **You will get error with assembly is in DLL_PATH dir!** - this is due to TPA restrictions and this app being *simple*.
+  **You will get 0x80131040 error with assembly is in DLL_PATH dir!** - this is due to TPA restrictions and this app being *simple*.
+
+### Why we will get 0x80131040 error? What's the solution if I must have them in the same dir?
+You will get 0x80131040 error, because your assembly will get listed in Trusted Platform Assemblies. And every requested assemby from TPA list must have valid version string. Most ootb mcs compiled programs have version 0.0.0.0, so In our example instead of requesting "Square" assembly app need to request "Square, Version=0.0.0.0" assembly ( I'm talking about executeAssembly's assemblyName string ). Another workaround is to modify function that add DLLs to TPA list to not add our assembly - I've just used function from coreCLR code which adds all files.
 
 
 ## Example
