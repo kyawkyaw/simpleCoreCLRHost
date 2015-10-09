@@ -38,8 +38,14 @@ int runFromEntryPoint(
     void* coreclrLib = dlopen( coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL );
 
     if ( coreclrLib != nullptr ) {
-        ExecuteAssemblyFunction executeAssembly = (ExecuteAssemblyFunction)dlsym( coreclrLib, "ExecuteAssembly" );
-        if ( executeAssembly != nullptr ) {
+
+        coreclrInitializeFunction coreclr_initialize = (coreclrInitializeFunction) dlsym( coreclrLib, "coreclr_initialize" );
+        coreclrShutdownFunction coreclr_shutdown = (coreclrShutdownFunction) dlsym( coreclrLib, "coreclr_shutdown" );
+        coreclrCreateDelegateFunction coreclr_create_delegate = (coreclrCreateDelegateFunction) dlsym( coreclrLib, "coreclr_create_delegate" );
+
+        if ( coreclr_initialize != nullptr && coreclr_shutdown != nullptr &&
+                                          coreclr_create_delegate != nullptr ) {
+
             const char *propertyKeys[] = {
                 "TRUSTED_PLATFORM_ASSEMBLIES",
                 "APP_PATHS",
@@ -55,35 +61,63 @@ int runFromEntryPoint(
                 "UseLatestBehaviorWhenTFMNotSpecified"
             };
 
-            HRESULT st = executeAssembly(
-                            currentExeAbsolutePath.c_str(),
-                            coreClrDllPath.c_str(),
-                            "simpleCoreCLRHost",
-                            sizeof(propertyKeys) / sizeof(propertyKeys[0]),
-                            propertyKeys,
-                            propertyValues,
-                            0,    // argc
-                            NULL, // argv
-                            NULL,
-                            assemblyName.c_str(),
-                            entryPointType.c_str(),
-                            entryPointName.c_str(),
-                            (DWORD*)&exitCode);
+            void* hostHandle;
+            unsigned int domainId;
 
-            if ( !SUCCEEDED( st ) ) {
-                std::cerr << "ExecuteAssembly failed - status: " << st << std::endl;
-                exitCode = -1;
+            // initialize coreclr
+            int status = coreclr_initialize (
+              currentExeAbsolutePath.c_str(),
+              "simpleCoreCLRHost",
+              sizeof(propertyKeys) / sizeof(propertyKeys[0]),
+              propertyKeys,
+              propertyValues,
+              &hostHandle,
+              &domainId
+            );
+
+            if ( status < 0 ) {
+              std::cerr << "ERROR! coreclr_initialize status: " << status << std::endl;
+              return -1;
             }
-        }
-        else
-            std::cerr << "ERROR: Function ExecuteAssembly not found in the libcoreclr.so" << std::endl;
+
+            void** delegate;
+
+            // create delegate to our entry point
+            status = coreclr_create_delegate (
+              hostHandle,
+              domainId,
+              assemblyName.c_str(),
+              entryPointType.c_str(),
+              entryPointName.c_str(),
+              delegate
+            );
+
+            if ( status < 0 ) {
+              std::cerr << "ERROR! coreclr_create_delegate status: " << status << std::endl;
+              return -1;
+            }
+
+            // I have to flush cout, or coreclr will crash. Bug?
+            std::cout << std::flush;
+
+            // run our delegate
+            ((void (*)()) *delegate)();
+
+            status = coreclr_shutdown ( hostHandle, domainId );
+
+            if ( status < 0 ) {
+              std::cerr << "ERROR! coreclr_shutdown status: " << status << std::endl;
+              return -1;
+            }
+        } else
+          std::cerr << "ERROR: Functions we need were not found in the libcoreclr.so" << std::endl;
 
         if ( dlclose( coreclrLib ) != 0 )
-            std::cerr << "WARNING: dlclose failed" << std::endl;
+          std::cerr << "WARNING: dlclose failed" << std::endl;
 
     }
     else
-        std::cerr << "ERROR: dlopen failed to open the libcoreclr.so with error " << dlerror() << std::endl;
+      std::cerr << "ERROR: dlopen failed to open the libcoreclr.so with error " << dlerror() << std::endl;
 
     return exitCode;
 }

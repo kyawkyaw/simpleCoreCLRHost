@@ -42,7 +42,7 @@ You will get 0x80131040 error, because your assembly will get listed in Trusted 
   First, set $SCCH_COREPATH variable in your shell to absolute path of **YOUR** directory with DNX dlls.
   Mine is:
 
-    export SCCH_COREPATH="/home/marqin/.dnx/runtimes/dnx-coreclr-linux-x64.1.0.0-beta6-12114/bin"
+    export SCCH_COREPATH="$HOME/.dnx/runtimes/dnx-coreclr-darwin-x64.1.0.0-rc1-15838/bin"
   then, go to ./example dir and run build.sh script:
 
     cd ./example

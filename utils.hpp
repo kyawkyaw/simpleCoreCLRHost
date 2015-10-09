@@ -20,29 +20,29 @@
   std::string coreClrDll = "libcoreclr.so";
 #endif
 
-// Windows types used by the ExecuteAssembly function
-typedef unsigned int DWORD;
-typedef const char16_t* LPCWSTR;
-typedef const char* LPCSTR;
-typedef int32_t HRESULT;
+// Prototype of the coreclr_initialize function from the libcoreclr.so
+typedef int (*coreclrInitializeFunction)(
+            const char* exePath,
+            const char* appDomainFriendlyName,
+            int propertyCount,
+            const char** propertyKeys,
+            const char** propertyValues,
+            void** hostHandle,
+            unsigned int* domainId);
 
-#define SUCCEEDED(Status) ((HRESULT)(Status) >= 0)
+// Prototype of the coreclr_shutdown function from the libcoreclr.so
+typedef int (*coreclrShutdownFunction)(
+            void* hostHandle,
+            unsigned int domainId);
 
-// Prototype of the ExecuteAssembly function from the libcoreclr.do
-typedef HRESULT (*ExecuteAssemblyFunction)(
-                    LPCSTR exePath,
-                    LPCSTR coreClrPath,
-                    LPCSTR appDomainFriendlyName,
-                    int propertyCount,
-                    LPCSTR* propertyKeys,
-                    LPCSTR* propertyValues,
-                    int argc,
-                    LPCSTR* argv,
-                    LPCSTR managedAssemblyPath,
-                    LPCSTR entryPointAssemblyName,
-                    LPCSTR entryPointTypeName,
-                    LPCSTR entryPointMethodsName,
-                    DWORD* exitCode);
+// Prototype of the coreclr_execute_assembly function from the libcoreclr.so
+typedef int (*coreclrCreateDelegateFunction)(
+              void* hostHandle,
+              unsigned int domainId,
+              const char* entryPointAssemblyName,
+              const char* entryPointTypeName,
+              const char* entryPointMethodName,
+              void** delegate);
 
 bool GetDirectory(std::string absolutePath, std::string& directory)
 {
@@ -56,8 +56,6 @@ bool GetDirectory(std::string absolutePath, std::string& directory)
 
     return false;
 }
-
-
 
 void AddFilesFromDirectoryToTpaList(std::string directory, std::string& tpaList)
 {
