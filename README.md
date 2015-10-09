@@ -1,6 +1,7 @@
 # simpleCoreCLRHost
 
   This c++ app allows to run custom C# method from compiled C# .dll on Linux and OS X using coreCLR.
+  In our example that C# method runs C++ class functions via C wrapper.
   It's code is based on [example from coreCLR](https://github.com/dotnet/coreclr/tree/master/src/coreclr/hosts/unixcoreruncommon)
   and was done with big help from [**@janvorli**](https://github.com/janvorli), who patiently answered my questions.
 
