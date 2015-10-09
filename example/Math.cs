@@ -3,13 +3,13 @@ using System.Runtime.InteropServices;
 
 public class Math {
 
-  [DllImport("mathWrapper.lib")]
+  [DllImport("../SCCH")]
   static public extern IntPtr mathClass_mathClass(int value);
 
-  [DllImport("mathWrapper.lib")]
+  [DllImport("../SCCH")]
   static public extern unsafe void mathClass_doubleMe( IntPtr i );
 
-  [DllImport("mathWrapper.lib")]
+  [DllImport("../SCCH")]
   static public extern int mathClass_getValue( IntPtr i );
 
   public static unsafe void DoubleIt(int *x) {

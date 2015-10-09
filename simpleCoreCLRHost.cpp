@@ -101,9 +101,9 @@ int runFromEntryPoint(
             std::cout << std::flush;
 
             // run our delegate
-            int number = 4;
+            int number = 42;
             ((void (*)(int*)) *delegate)(&number);
-            std::cout << "Result should be 8. Result is: " << number << std::endl;
+            std::cout << "Result should be 84. Result is: " << number << std::endl;
 
             status = coreclr_shutdown ( hostHandle, domainId );
 
