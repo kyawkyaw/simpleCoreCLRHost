@@ -47,10 +47,10 @@ You will get 0x80131040 error, because your assembly will get listed in Trusted 
 
     cd ./example
     sh build.sh
-  and *Hello.dll* will appear in your *./example* dir.
+  and *Math.dll* will appear in your *./example* dir.
 
 ### Running example
   Just go back, and run ./SCCH:
 
     cd ..
-    ./SCCH "$SCCH_COREPATH" ./example/Hello.dll Hello HelloWorld
+    ./SCCH "$SCCH_COREPATH" ./example/Math.dll Math DoubleIt

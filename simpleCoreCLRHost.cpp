@@ -101,7 +101,8 @@ int runFromEntryPoint(
             std::cout << std::flush;
 
             // run our delegate
-            ((void (*)()) *delegate)();
+            int result = ((int (*)(int)) *delegate)(4);
+            std::cout << "Result should be 8. Result is: " << result << std::endl;
 
             status = coreclr_shutdown ( hostHandle, domainId );
 
@@ -119,7 +120,7 @@ int runFromEntryPoint(
     else
       std::cerr << "ERROR: dlopen failed to open the libcoreclr.so with error " << dlerror() << std::endl;
 
-    return exitCode;
+    return 0;
 }
 
 int main( int argc, char* argv[]) {
@@ -167,6 +168,8 @@ int main( int argc, char* argv[]) {
                           assemblyName,
                           std::string(argv[3]),
                           std::string(argv[4]));
-  std::cout << "Exit Code: " << exitCode << std::endl;
+
+  if ( exitCode < 0 )
+    std::cout << "Exit Code: " << exitCode << std::endl;
   return 0;
 }
