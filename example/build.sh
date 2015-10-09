@@ -5,4 +5,5 @@ if [ -z "$SCCH_COREPATH" ]; then
 fi;
 
 mcs /noconfig /nostdlib /r:"$SCCH_COREPATH/mscorlib.dll" /r:"$SCCH_COREPATH/System.Runtime.dll" /r:"$SCCH_COREPATH/System.Console.dll" /t:library /unsafe Math.cs
-clang++ --std=c++11 -dynamiclib mathClass.cpp -o mathClass.lib
+clang++ --std=c++11 -c mathClass.cpp -o mathClass.o
+clang++ --std=c++11 -dynamiclib mathClass.o mathWrapper.cpp -o mathWrapper.lib

@@ -1,4 +1,5 @@
 SCCH
 a.out
 example/Math.dll
-example/mathClass.lib
+example/mathWrapper.lib
+example/mathClass.o
