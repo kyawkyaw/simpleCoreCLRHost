@@ -1,8 +1,7 @@
-//
-// parts of runFromEntryPoint - Copyright (c) Microsoft. All rights reserved.
-// rest - Copyright (c) Hubert Jarosz. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+/*
+ *  Copyright (c) Hubert Jarosz. All rights reserved.
+ *  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
 
 #if not defined (__unix__) && not defined(__unix) && not defined (unix) && ( (not defined (__APPLE__) || not defined (__MACH__)) )
   #error THIS SOFTWARE IS ONLY FOR UNIX-LIKE SYSTEMS!
@@ -27,120 +26,121 @@ int runFromEntryPoint(
             std::string entryPointName)
 {
 
-    std::string coreClrDllPath = clrFilesAbsolutePath + "/" + coreClrDll;
+  std::string coreClrDllPath = clrFilesAbsolutePath + "/" + coreClrDll;
 
 
-    if ( coreClrDllPath.size() >= PATH_MAX ) {
-        std::cerr << "Path to libcoreclr.so too long!" << std::endl;
-        return -1;
-    }
+  if ( coreClrDllPath.size() >= PATH_MAX ) {
+      std::cerr << "Path to libcoreclr.so too long!" << std::endl;
+      return -1;
+  }
 
-    // Get just the path component of the managed assembly path
-    std::string appPath;
-    GetDirectory( managedAssemblyAbsolutePath, appPath );
+  // Get just the path component of the managed assembly path
+  std::string appPath;
+  GetDirectory( managedAssemblyAbsolutePath, appPath );
 
-    std::string nativeDllSearchDirs = appPath + ":" + clrFilesAbsolutePath;
+  std::string nativeDllSearchDirs = appPath + ":" + clrFilesAbsolutePath;
 
-    std::string tpaList;
-    AddFilesFromDirectoryToTpaList( clrFilesAbsolutePath, tpaList );
+  std::string tpaList;
+  AddFilesFromDirectoryToTpaList( clrFilesAbsolutePath, tpaList );
 
-    void* coreclrLib = dlopen( coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL );
+  void* coreclrLib = dlopen( coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL );
 
-    if ( coreclrLib != nullptr ) {
+  if ( coreclrLib == nullptr ) {
+    std::cerr << "ERROR: dlopen failed to open the " << coreClrDll << " with error: " << dlerror() << std::endl;
+    return -1;
+  }
 
-        coreclrInitializeFunction coreclr_initialize = reinterpret_cast <coreclrInitializeFunction> (dlsym( coreclrLib, "coreclr_initialize" ));
-        coreclrShutdownFunction coreclr_shutdown = reinterpret_cast <coreclrShutdownFunction> (dlsym( coreclrLib, "coreclr_shutdown" ));
-        coreclrCreateDelegateFunction coreclr_create_delegate = reinterpret_cast <coreclrCreateDelegateFunction> ( dlsym( coreclrLib, "coreclr_create_delegate" ));
 
-        if ( coreclr_initialize != nullptr && coreclr_shutdown != nullptr &&
-                                          coreclr_create_delegate != nullptr ) {
+  coreclrInitializeFunction coreclr_initialize = reinterpret_cast <coreclrInitializeFunction> (dlsym( coreclrLib, "coreclr_initialize" ));
+  coreclrShutdownFunction coreclr_shutdown = reinterpret_cast <coreclrShutdownFunction> (dlsym( coreclrLib, "coreclr_shutdown" ));
+  coreclrCreateDelegateFunction coreclr_create_delegate = reinterpret_cast <coreclrCreateDelegateFunction> ( dlsym( coreclrLib, "coreclr_create_delegate" ));
 
-            const char *propertyKeys[] = {
-                "TRUSTED_PLATFORM_ASSEMBLIES",
-                "APP_PATHS",
-                "APP_NI_PATHS",
-                "NATIVE_DLL_SEARCH_DIRECTORIES",
-                "AppDomainCompatSwitch"
-            };
-            const char *propertyValues[] = {
-                tpaList.c_str(),
-                appPath.c_str(),
-                appPath.c_str(),
-                nativeDllSearchDirs.c_str(),
-                "UseLatestBehaviorWhenTFMNotSpecified"
-            };
+  if ( coreclr_initialize == nullptr && coreclr_shutdown == nullptr && coreclr_create_delegate == nullptr ) {
+    std::cerr << "ERROR: Functions we need were not found in the libcoreclr.so" << std::endl;
+    return -1;
+  }
 
-            void* hostHandle;
-            unsigned int domainId;
+  const char *propertyKeys[] = {
+      "TRUSTED_PLATFORM_ASSEMBLIES",
+      "APP_PATHS",
+      "APP_NI_PATHS",
+      "NATIVE_DLL_SEARCH_DIRECTORIES",
+      "AppDomainCompatSwitch"
+  };
 
-            // initialize coreclr
-            int status = coreclr_initialize (
-              currentExeAbsolutePath.c_str(),
-              "simpleCoreCLRHost",
-              sizeof(propertyKeys) / sizeof(propertyKeys[0]),
-              propertyKeys,
-              propertyValues,
-              &hostHandle,
-              &domainId
-            );
+  const char *propertyValues[] = {
+      tpaList.c_str(),
+      appPath.c_str(),
+      appPath.c_str(),
+      nativeDllSearchDirs.c_str(),
+      "UseLatestBehaviorWhenTFMNotSpecified"
+  };
 
-            if ( status < 0 ) {
-              std::cerr << "ERROR! coreclr_initialize status: " << status << std::endl;
-              return -1;
-            }
+  void* hostHandle;
+  unsigned int domainId;
 
-            csharp_runIt_t csharp_runIt;
-            void** csharp_runIt_ptr = reinterpret_cast<void**>(&csharp_runIt);
+  // initialize coreclr
+  int status = coreclr_initialize (
+    currentExeAbsolutePath.c_str(),
+    "simpleCoreCLRHost",
+    sizeof(propertyKeys) / sizeof(propertyKeys[0]),
+    propertyKeys,
+    propertyValues,
+    &hostHandle,
+    &domainId
+  );
 
-            // create delegate to our entry point
-            status = coreclr_create_delegate (
-              hostHandle,
-              domainId,
-              assemblyName.c_str(),
-              entryPointType.c_str(),
-              entryPointName.c_str(),
-              csharp_runIt_ptr
-            );
+  if ( status < 0 ) {
+    std::cerr << "ERROR! coreclr_initialize status: " << status << std::endl;
+    return -1;
+  }
 
-            if ( status < 0 ) {
-              std::cerr << "ERROR! coreclr_create_delegate status: " << status << std::endl;
-              return -1;
-            }
+  csharp_runIt_t csharp_runIt;
+  void** csharp_runIt_ptr = reinterpret_cast<void**>(&csharp_runIt);
 
-            /*  I have to flush cout, or coreclr will crash. Bug?
-             *  EDIT: seems fixed
-             */
-            // std::cout << std::flush;
+  // create delegate to our entry point
+  status = coreclr_create_delegate (
+    hostHandle,
+    domainId,
+    assemblyName.c_str(),
+    entryPointType.c_str(),
+    entryPointName.c_str(),
+    csharp_runIt_ptr
+  );
 
-            myClass tmp = myClass();
-            tmp.question();
+  if ( status < 0 ) {
+    std::cerr << "ERROR! coreclr_create_delegate status: " << status << std::endl;
+    return -1;
+  }
 
-            /*
-             *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
-             */
+  /*  I have to flush cout, or coreclr will crash. Bug?
+   *  EDIT: seems fixed
+   */
+  // std::cout << std::flush;
 
-            csharp_runIt (tmp, std::mem_fun_ref(&myClass::print));
+  myClass tmp = myClass();
+  tmp.question();
 
-            status = coreclr_shutdown ( hostHandle, domainId );
+  /*
+   *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
+   */
 
-            if ( status < 0 ) {
-              std::cerr << "ERROR! coreclr_shutdown status: " << status << std::endl;
-              return -1;
-            }
-        } else
-          std::cerr << "ERROR: Functions we need were not found in the libcoreclr.so" << std::endl;
+  csharp_runIt( tmp, std::mem_fun_ref(&myClass::print) );
 
-        if ( dlclose( coreclrLib ) != 0 )
-          std::cerr << "WARNING: dlclose of " << coreclrLib << " failed with error: " << dlerror() << std::endl;
+  status = coreclr_shutdown ( hostHandle, domainId );
 
-    }
-    else
-      std::cerr << "ERROR: dlopen failed to open the " << coreClrDll << " with error: " << dlerror() << std::endl;
+  if ( status < 0 ) {
+    std::cerr << "ERROR! coreclr_shutdown status: " << status << std::endl;
+    return -1;
+  }
 
-    return 0;
+  if ( dlclose( coreclrLib ) != 0 )
+    std::cerr << "WARNING: dlclose of " << coreclrLib << " failed with error: " << dlerror() << std::endl;
+
+  return 0;
 }
 
-int main( int argc, char* argv[]) {
+int main( int argc, char* argv[] ) {
 
   if ( argc != 5 ) {
     std::cout << "READ README.md !" << std::endl;
