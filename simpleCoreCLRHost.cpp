@@ -8,14 +8,19 @@
 #endif
 
 #include "utils.hpp"
-
 #include <functional>
+
+#if not defined PATH_MAX
+#warning Is this GNU/Hurd? Then this code could occupy lot of memory.
+#include <stdio.h>
+#define PATH_MAX FILENAME_MAX
+#endif
 
 void myFunction() {
   std::cout << "Hello, I'm C++ function." << std::endl;
 }
 
-typedef void (*csharp_runIt_t)( myClass&, std::mem_fun_ref_t<void, myClass>);
+typedef void (*csharp_runIt_t)( myClass&, std::mem_fun_ref_t<void, myClass> );
 
 int runFromEntryPoint(
             std::string currentExeAbsolutePath,
@@ -147,7 +152,7 @@ int main( int argc, char* argv[] ) {
     return 0;
   }
 
-  char _cwd[FILENAME_MAX];
+  char _cwd[PATH_MAX];
   if ( !getcwd(_cwd, sizeof(_cwd)) ) {
     std::cerr << "ERROR: Cannot get CWD!" << std::endl;
     return 1;
@@ -177,7 +182,6 @@ int main( int argc, char* argv[] ) {
   }
 
   assemblyName = assemblyName.substr( 0, assemblyName.size()-4 );
-
 
 
   int exitCode = runFromEntryPoint(
