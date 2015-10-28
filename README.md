@@ -14,7 +14,7 @@
   Just link with dl, and remember to set c++11 flag.
   ( because coreCLR is not compatible with libc++ )
 
-    clang++ -Wall -Wextra -Wno-uninitialized -g -ldl -std=c++11 simpleCoreCLRHost.cpp -o SCCH
+    clang++ -Wall -Wextra -Werror -ldl simpleCoreCLRHost.cpp -o SCCH
   You can use other name that *SCCH* for output, this is just for example.
 
 ## Usage

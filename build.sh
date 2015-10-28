@@ -5,4 +5,4 @@ fi;
 
 mcs /noconfig /nostdlib /r:"$SCCH_COREPATH/mscorlib.dll" /r:"$SCCH_COREPATH/System.Runtime.dll" /r:"$SCCH_COREPATH/System.Console.dll" /t:library /unsafe Managed.cs
 
-clang++ -Wall -Wextra -pedantic -ldl simpleCoreCLRHost.cpp -o SCCH
+clang++ -Wall -Wextra -Werror -ldl simpleCoreCLRHost.cpp -o SCCH

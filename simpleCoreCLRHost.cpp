@@ -4,15 +4,19 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-#include "utils.hpp"
+#if not defined (__unix__) && not defined(__unix) && not defined (unix) && ( (not defined (__APPLE__) || not defined (__MACH__)) )
+  #error THIS SOFTWARE IS ONLY FOR UNIX-LIKE SYSTEMS!
+#endif
 
-#include <unistd.h>
+#include "utils.hpp"
 
 #include <functional>
 
 void myFunction() {
   std::cout << "Hello, I'm C++ function." << std::endl;
 }
+
+typedef void (*csharp_runIt_t)( myClass&, std::mem_fun_ref_t<void, myClass>);
 
 int runFromEntryPoint(
             std::string currentExeAbsolutePath,
@@ -44,9 +48,9 @@ int runFromEntryPoint(
 
     if ( coreclrLib != nullptr ) {
 
-        coreclrInitializeFunction coreclr_initialize = (coreclrInitializeFunction) dlsym( coreclrLib, "coreclr_initialize" );
-        coreclrShutdownFunction coreclr_shutdown = (coreclrShutdownFunction) dlsym( coreclrLib, "coreclr_shutdown" );
-        coreclrCreateDelegateFunction coreclr_create_delegate = (coreclrCreateDelegateFunction) dlsym( coreclrLib, "coreclr_create_delegate" );
+        coreclrInitializeFunction coreclr_initialize = reinterpret_cast <coreclrInitializeFunction> (dlsym( coreclrLib, "coreclr_initialize" ));
+        coreclrShutdownFunction coreclr_shutdown = reinterpret_cast <coreclrShutdownFunction> (dlsym( coreclrLib, "coreclr_shutdown" ));
+        coreclrCreateDelegateFunction coreclr_create_delegate = reinterpret_cast <coreclrCreateDelegateFunction> ( dlsym( coreclrLib, "coreclr_create_delegate" ));
 
         if ( coreclr_initialize != nullptr && coreclr_shutdown != nullptr &&
                                           coreclr_create_delegate != nullptr ) {
@@ -85,8 +89,8 @@ int runFromEntryPoint(
               return -1;
             }
 
-            void* address = nullptr;
-            void** delegate = &address;  // = nullptr;  // bug
+            csharp_runIt_t csharp_runIt;
+            void** csharp_runIt_ptr = reinterpret_cast<void**>(&csharp_runIt);
 
             // create delegate to our entry point
             status = coreclr_create_delegate (
@@ -95,7 +99,7 @@ int runFromEntryPoint(
               assemblyName.c_str(),
               entryPointType.c_str(),
               entryPointName.c_str(),
-              delegate
+              csharp_runIt_ptr
             );
 
             if ( status < 0 ) {
@@ -115,7 +119,7 @@ int runFromEntryPoint(
              *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
              */
 
-            ( ( void (*)( std::mem_fun_t<void, myClass>, myClass* ) ) *delegate ) (std::mem_fun(&myClass::print), &tmp);
+            csharp_runIt (tmp, std::mem_fun_ref(&myClass::print));
 
             status = coreclr_shutdown ( hostHandle, domainId );
 
