@@ -4,29 +4,11 @@
 //
 
 #include <cstdlib>
-#include <assert.h>
-#include <dirent.h>
-#include <dlfcn.h>
-#include <limits.h>
 #include <set>
 #include <string>
-#include <string.h>
+#include <cstring>
 #include <sys/stat.h>
-#include <iostream>
-
-class myClass {
-private:
-  int value;
-public:
-  void question() { value = 42; }
-  void print() { std::cout << "Value: " <<  value << std::endl; }
-};
-
-#if defined(__APPLE__)
-  std::string coreClrDll = "libcoreclr.dylib";
-#else
-  std::string coreClrDll = "libcoreclr.so";
-#endif
+#include <dirent.h>
 
 // Prototype of the coreclr_initialize function from the libcoreclr.so
 typedef int (*coreclrInitializeFunction)(

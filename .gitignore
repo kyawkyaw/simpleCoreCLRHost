@@ -1,5 +1,3 @@
 SCCH
-a.out
-*.dll
-*.o
+Managed.dll
 SCCH.dSYM
