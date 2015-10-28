@@ -8,6 +8,12 @@
 
 #include <unistd.h>
 
+#include <functional>
+
+void myFunction() {
+  std::cout << "Hello, I'm C++ function." << std::endl;
+}
+
 int runFromEntryPoint(
             std::string currentExeAbsolutePath,
             std::string clrFilesAbsolutePath,
@@ -16,7 +22,6 @@ int runFromEntryPoint(
             std::string entryPointType,
             std::string entryPointName)
 {
-    int exitCode = -1;
 
     std::string coreClrDllPath = clrFilesAbsolutePath + "/" + coreClrDll;
 
@@ -37,14 +42,16 @@ int runFromEntryPoint(
 
     void* coreclrLib = dlopen( coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL );
 
-    if ( coreclrLib != nullptr ) {
+    if ( coreclrLib != NULL ) {
+
+        std::cerr << "1. Pointer to coreclrLib: " << coreclrLib <<  std::endl;
 
         coreclrInitializeFunction coreclr_initialize = (coreclrInitializeFunction) dlsym( coreclrLib, "coreclr_initialize" );
         coreclrShutdownFunction coreclr_shutdown = (coreclrShutdownFunction) dlsym( coreclrLib, "coreclr_shutdown" );
         coreclrCreateDelegateFunction coreclr_create_delegate = (coreclrCreateDelegateFunction) dlsym( coreclrLib, "coreclr_create_delegate" );
 
-        if ( coreclr_initialize != nullptr && coreclr_shutdown != nullptr &&
-                                          coreclr_create_delegate != nullptr ) {
+        if ( coreclr_initialize != NULL && coreclr_shutdown != NULL &&
+                                          coreclr_create_delegate != NULL ) {
 
             const char *propertyKeys[] = {
                 "TRUSTED_PLATFORM_ASSEMBLIES",
@@ -80,7 +87,9 @@ int runFromEntryPoint(
               return -1;
             }
 
-            void** delegate;
+            void** delegate;  // = NULL;  // bug
+
+            std::cerr << "2. Pointer to coreclrLib: " << coreclrLib <<  std::endl;
 
             // create delegate to our entry point
             status = coreclr_create_delegate (
@@ -92,18 +101,28 @@ int runFromEntryPoint(
               delegate
             );
 
+            std::cerr << "3. Pointer to coreclrLib: " << coreclrLib <<  std::endl;
+
             if ( status < 0 ) {
               std::cerr << "ERROR! coreclr_create_delegate status: " << status << std::endl;
               return -1;
             }
 
-            // I have to flush cout, or coreclr will crash. Bug?
-            std::cout << std::flush;
+            std::cerr << "dlopen of 4" << coreclrLib <<  std::endl;
 
-            // run our delegate
-            int number = 42;
-            ((void (*)(int*)) *delegate)(&number);
-            std::cout << "Result should be 84. Result is: " << number << std::endl;
+            // I have to flush cout, or coreclr will crash. Bug?
+            // EDIT: seems fixed with libstdc++
+            // std::cout << std::flush;
+
+            myClass tmp = myClass();
+            tmp.question();
+
+            /*
+             * If arguments are in in different order then second arg is 0 in C#. Dunno why.
+             * Also, this is not working when using libc++, because it somehow collide with coreCLR.
+             */
+
+            ( ( void (*)( myClass*, std::mem_fun_t<void, myClass> ) ) *delegate ) (&tmp, std::mem_fun(&myClass::print));
 
             status = coreclr_shutdown ( hostHandle, domainId );
 
@@ -115,11 +134,11 @@ int runFromEntryPoint(
           std::cerr << "ERROR: Functions we need were not found in the libcoreclr.so" << std::endl;
 
         if ( dlclose( coreclrLib ) != 0 )
-          std::cerr << "WARNING: dlclose failed" << std::endl;
+          std::cerr << "WARNING: dlclose of " << coreclrLib << " failed with error: " << dlerror() << std::endl;
 
     }
     else
-      std::cerr << "ERROR: dlopen failed to open the libcoreclr.so with error " << dlerror() << std::endl;
+      std::cerr << "ERROR: dlopen failed to open the " << coreClrDll << " with error: " << dlerror() << std::endl;
 
     return 0;
 }
@@ -162,6 +181,8 @@ int main( int argc, char* argv[]) {
 
   assemblyName = assemblyName.substr( 0, assemblyName.size()-4 );
 
+
+
   int exitCode = runFromEntryPoint(
                           cwd+std::string(argv[0]), // absolute path to this exe
                           std::string(argv[1]),     // absolute path to coreCLR DLLs
@@ -172,5 +193,7 @@ int main( int argc, char* argv[]) {
 
   if ( exitCode < 0 )
     std::cout << "Exit Code: " << exitCode << std::endl;
+
+
   return 0;
 }

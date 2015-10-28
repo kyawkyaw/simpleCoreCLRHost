@@ -14,6 +14,14 @@
 #include <sys/stat.h>
 #include <iostream>
 
+class myClass {
+private:
+  int value;
+public:
+  void question() { value = 42; }
+  void print() { std::cout << "Value: " <<  value << std::endl; }
+};
+
 #if defined(__APPLE__)
   std::string coreClrDll = "libcoreclr.dylib";
 #else
@@ -67,7 +75,7 @@ void AddFilesFromDirectoryToTpaList(std::string directory, std::string& tpaList)
                 };
 
     DIR* dir = opendir(directory.c_str());
-    if (dir == nullptr)
+    if (dir == NULL)
     {
         return;
     }
@@ -76,7 +84,7 @@ void AddFilesFromDirectoryToTpaList(std::string directory, std::string& tpaList)
 
     // Walk the directory for each extension separately so that we first get files with .ni.dll extension,
     // then files with .dll extension, etc.
-    for (int extIndex = 0; extIndex < sizeof(tpaExtensions) / sizeof(tpaExtensions[0]); extIndex++)
+    for (unsigned long extIndex = 0; extIndex < sizeof(tpaExtensions) / sizeof(tpaExtensions[0]); extIndex++)
     {
         const char* ext = tpaExtensions[extIndex];
         int extLength = strlen(ext);
@@ -84,7 +92,7 @@ void AddFilesFromDirectoryToTpaList(std::string directory, std::string& tpaList)
         struct dirent* entry;
 
         // For all entries in the directory
-        while ((entry = readdir(dir)) != nullptr)
+        while ((entry = readdir(dir)) != NULL)
         {
             // We are interested in files only
             switch (entry->d_type)

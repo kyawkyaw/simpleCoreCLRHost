@@ -8,15 +8,13 @@
 ## Prerequisites
   You need DNX SDK
   ( [Linux](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-linux.md), [OS X](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-osx.md) )
-  and compiler with c++11 support. You will also need *Mono* to build example.
+  and compiler with libstdc++. You will also need *Mono* to build example.
 
 ## Compilation
-  Just link with dl, and use c++11 standard.
+  Just link with dl, and remember to use libstdc++ and **not** libc++.
+  ( because coreCLR is not compatible with libc++ )
 
-    clang++ -ldl -std=c++11 simpleCoreCLRHost.cpp -o SCCH
-  or
-
-    g++ -ldl -std=c++11 simpleCoreCLRHost.cpp -o SCCH
+    clang++ -Wall -Wextra -Wno-uninitialized -g -ldl -std=c++98 -stdlib=libstdc++ simpleCoreCLRHost.cpp -o SCCH
   You can use other name that *SCCH* for output, this is just for example.
 
 ## Usage
@@ -44,14 +42,11 @@ You will get 0x80131040 error, because your assembly will get listed in Trusted 
   Mine is:
 
     export SCCH_COREPATH="$HOME/.dnx/runtimes/dnx-coreclr-darwin-x64.1.0.0-rc1-15838/bin"
-  then, go to ./example dir and run build.sh script:
+  then run build.sh script:
 
-    cd ./example
     sh build.sh
-  and *Math.dll* will appear in your *./example* dir.
+  and *Managed.dll* will appear in your directory.
 
 ### Running example
-  Just go back, and run ./SCCH:
-
-    cd ..
-    ./SCCH "$SCCH_COREPATH" ./example/Math.dll Math DoubleIt
+  Just run ./SCCH with proper arguments:
+    ./SCCH "$SCCH_COREPATH" ./Managed.dll Managed runIt

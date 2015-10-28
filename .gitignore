@@ -1,4 +1,5 @@
 SCCH
 a.out
-example/Math.dll
-example/mathClass.o
+*.dll
+*.o
+SCCH.dSYM
