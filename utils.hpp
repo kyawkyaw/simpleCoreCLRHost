@@ -75,7 +75,7 @@ void AddFilesFromDirectoryToTpaList(std::string directory, std::string& tpaList)
                 };
 
     DIR* dir = opendir(directory.c_str());
-    if (dir == NULL)
+    if (dir == nullptr)
     {
         return;
     }
@@ -92,7 +92,7 @@ void AddFilesFromDirectoryToTpaList(std::string directory, std::string& tpaList)
         struct dirent* entry;
 
         // For all entries in the directory
-        while ((entry = readdir(dir)) != NULL)
+        while ((entry = readdir(dir)) != nullptr)
         {
             // We are interested in files only
             switch (entry->d_type)

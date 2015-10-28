@@ -42,16 +42,14 @@ int runFromEntryPoint(
 
     void* coreclrLib = dlopen( coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL );
 
-    if ( coreclrLib != NULL ) {
-
-        std::cerr << "1. Pointer to coreclrLib: " << coreclrLib <<  std::endl;
+    if ( coreclrLib != nullptr ) {
 
         coreclrInitializeFunction coreclr_initialize = (coreclrInitializeFunction) dlsym( coreclrLib, "coreclr_initialize" );
         coreclrShutdownFunction coreclr_shutdown = (coreclrShutdownFunction) dlsym( coreclrLib, "coreclr_shutdown" );
         coreclrCreateDelegateFunction coreclr_create_delegate = (coreclrCreateDelegateFunction) dlsym( coreclrLib, "coreclr_create_delegate" );
 
-        if ( coreclr_initialize != NULL && coreclr_shutdown != NULL &&
-                                          coreclr_create_delegate != NULL ) {
+        if ( coreclr_initialize != nullptr && coreclr_shutdown != nullptr &&
+                                          coreclr_create_delegate != nullptr ) {
 
             const char *propertyKeys[] = {
                 "TRUSTED_PLATFORM_ASSEMBLIES",
@@ -87,9 +85,8 @@ int runFromEntryPoint(
               return -1;
             }
 
-            void** delegate;  // = NULL;  // bug
-
-            std::cerr << "2. Pointer to coreclrLib: " << coreclrLib <<  std::endl;
+            void* address = nullptr;
+            void** delegate = &address;  // = nullptr;  // bug
 
             // create delegate to our entry point
             status = coreclr_create_delegate (
@@ -101,28 +98,24 @@ int runFromEntryPoint(
               delegate
             );
 
-            std::cerr << "3. Pointer to coreclrLib: " << coreclrLib <<  std::endl;
-
             if ( status < 0 ) {
               std::cerr << "ERROR! coreclr_create_delegate status: " << status << std::endl;
               return -1;
             }
 
-            std::cerr << "dlopen of 4" << coreclrLib <<  std::endl;
-
-            // I have to flush cout, or coreclr will crash. Bug?
-            // EDIT: seems fixed with libstdc++
+            /*  I have to flush cout, or coreclr will crash. Bug?
+             *  EDIT: seems fixed
+             */
             // std::cout << std::flush;
 
             myClass tmp = myClass();
             tmp.question();
 
             /*
-             * If arguments are in in different order then second arg is 0 in C#. Dunno why.
-             * Also, this is not working when using libc++, because it somehow collide with coreCLR.
+             *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
              */
 
-            ( ( void (*)( myClass*, std::mem_fun_t<void, myClass> ) ) *delegate ) (&tmp, std::mem_fun(&myClass::print));
+            ( ( void (*)( std::mem_fun_t<void, myClass>, myClass* ) ) *delegate ) (std::mem_fun(&myClass::print), &tmp);
 
             status = coreclr_shutdown ( hostHandle, domainId );
 

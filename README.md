@@ -8,13 +8,13 @@
 ## Prerequisites
   You need DNX SDK
   ( [Linux](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-linux.md), [OS X](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-osx.md) )
-  and compiler with libstdc++. You will also need *Mono* to build example.
+  and compiler with c++11 support. You will also need *Mono* to build example.
 
 ## Compilation
-  Just link with dl, and remember to use libstdc++ and **not** libc++.
+  Just link with dl, and remember to set c++11 flag.
   ( because coreCLR is not compatible with libc++ )
 
-    clang++ -Wall -Wextra -Wno-uninitialized -g -ldl -std=c++98 -stdlib=libstdc++ simpleCoreCLRHost.cpp -o SCCH
+    clang++ -Wall -Wextra -Wno-uninitialized -g -ldl -std=c++11 simpleCoreCLRHost.cpp -o SCCH
   You can use other name that *SCCH* for output, this is just for example.
 
 ## Usage
