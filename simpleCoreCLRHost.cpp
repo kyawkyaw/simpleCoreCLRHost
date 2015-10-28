@@ -65,8 +65,8 @@ int runFromEntryPoint(
       "UseLatestBehaviorWhenTFMNotSpecified"
   };
 
-  void* hostHandle;
-  unsigned int domainId;
+  void* hostHandle = NULL;
+  unsigned int domainId = 0;
 
   // initialize coreclr
   int status = coreclr_initialize (
@@ -80,7 +80,7 @@ int runFromEntryPoint(
   );
 
   if ( status < 0 ) {
-    std::cerr << "ERROR! coreclr_initialize status: " << status << std::endl;
+    std::cerr << "ERROR! coreclr_initialize status: 0x" << std::hex << status << std::endl;
     return -1;
   }
 
@@ -98,7 +98,7 @@ int runFromEntryPoint(
   );
 
   if ( status < 0 ) {
-    std::cerr << "ERROR! coreclr_create_delegate status: " << status << std::endl;
+    std::cerr << "ERROR! coreclr_create_delegate status: 0x" << std::hex << status << std::endl;
     return -1;
   }
 
@@ -119,7 +119,7 @@ int runFromEntryPoint(
   status = coreclr_shutdown ( hostHandle, domainId );
 
   if ( status < 0 ) {
-    std::cerr << "ERROR! coreclr_shutdown status: " << status << std::endl;
+    std::cerr << "ERROR! coreclr_shutdown status: 0x" << std::hex << status << std::endl;
     return -1;
   }
 

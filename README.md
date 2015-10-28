@@ -42,10 +42,10 @@ You will get 0x80131040 error, because your assembly will get listed in Trusted 
   Mine is:
 
     export SCCH_COREPATH="$HOME/.dnx/runtimes/dnx-coreclr-darwin-x64.1.0.0-rc1-15838/bin"
-  then run build.sh script:
+  Run make:
 
-    sh build.sh
-  and *Managed.dll* will appear in your directory.
+    make
+  Then *Managed.dll* and *SCCH* will appear in your directory.
 
 ### Running example
   Just run ./SCCH with proper arguments:

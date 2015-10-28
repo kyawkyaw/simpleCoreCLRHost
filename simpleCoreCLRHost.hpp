@@ -11,6 +11,12 @@
 #include <iostream>
 #include <dlfcn.h>
 
+// getcwd on Linux
+#include <unistd.h>
+
+// PATH_MAX on Linux
+#include <limits.h>
+
 #if not defined PATH_MAX
   #warning Is this GNU/Hurd? Then this code could occupy a lot of memory.
   #include <stdio.h>
