@@ -9,7 +9,7 @@
 int runFromEntryPoint(
             std::string currentExeAbsolutePath,
             std::string clrFilesAbsolutePath,
-            std::string managedAssemblyAbsolutePath,
+            std::string managedAssemblyAbsoluteDir,
             std::string assemblyName,
             std::string entryPointType,
             std::string entryPointName)
@@ -23,11 +23,7 @@ int runFromEntryPoint(
       return -1;
   }
 
-  // Get just the path component of the managed assembly path
-  std::string appPath;
-  GetDirectory( managedAssemblyAbsolutePath, appPath );
-
-  std::string nativeDllSearchDirs = appPath + ":" + clrFilesAbsolutePath;
+  std::string nativeDllSearchDirs = managedAssemblyAbsoluteDir + ":" + clrFilesAbsolutePath;
 
   std::string tpaList;
   AddFilesFromDirectoryToTpaList( clrFilesAbsolutePath, tpaList );
@@ -59,14 +55,16 @@ int runFromEntryPoint(
 
   const char *propertyValues[] = {
       tpaList.c_str(),
-      appPath.c_str(),
-      appPath.c_str(),
+      managedAssemblyAbsoluteDir.c_str(),
+      managedAssemblyAbsoluteDir.c_str(),
       nativeDllSearchDirs.c_str(),
       "UseLatestBehaviorWhenTFMNotSpecified"
   };
 
   void* hostHandle = NULL;
   unsigned int domainId = 0;
+
+  std::cout << tpaList << std::endl;
 
   // initialize coreclr
   int status = coreclr_initialize (
@@ -146,6 +144,8 @@ int main( int argc, char* argv[] ) {
   cwd += "/";
 
   std::string assemblyName(argv[2]);
+  std::string assemblyDir(assemblyName);
+
 
   if( !assemblyName.size() ) {
     std::cerr << "ERROR: Bad ASSEMBLY_PATH !" << std::endl;
@@ -167,11 +167,14 @@ int main( int argc, char* argv[] ) {
 
   assemblyName = assemblyName.substr( 0, assemblyName.size()-4 );
 
+  assemblyDir.erase(find);  // get dir of assembly
+  assemblyDir = cwd + assemblyDir;
+
 
   int exitCode = runFromEntryPoint(
                           cwd+std::string(argv[0]), // absolute path to this exe
                           std::string(argv[1]),     // absolute path to coreCLR DLLs
-                          cwd+std::string(argv[2]), // absolute path to DLL to run
+                          assemblyDir, // absolute path to DLL to run
                           assemblyName,
                           std::string(argv[3]),
                           std::string(argv[4]));
