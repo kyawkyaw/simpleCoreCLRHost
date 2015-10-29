@@ -64,8 +64,6 @@ int runFromEntryPoint(
   void* hostHandle = NULL;
   unsigned int domainId = 0;
 
-  std::cout << tpaList << std::endl;
-
   // initialize coreclr
   int status = coreclr_initialize (
     currentExeAbsolutePath.c_str(),
