@@ -6,7 +6,10 @@
   and was done with big help from [**@janvorli**](https://github.com/janvorli), who patiently answered my questions.
 
 ## Prerequisites
-  You need DNX SDK
+  You need to have ICU 52 library in your linker path. If your Linux distribution have ICU 55 ( like Arch ), you can rebuild
+  System.Globalization.Native.so  by yourself, or copy ICU 52 files from another distribution repository.
+  
+  You also need DNX SDK ( coreclr+corefx )
   ( [Linux](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-linux.md), [OS X](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-osx.md) )
   and compiler with c++11 support. You will also need *Mono* to build example.
 
