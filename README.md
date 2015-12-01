@@ -6,18 +6,20 @@
   and was done with big help from [**@janvorli**](https://github.com/janvorli), who patiently answered my questions.
 
 ## Prerequisites
+  First, You need GCC 5.3+ or any other compiler that already supports C++ Filesystem TS.
+
   You need to have ICU 52 library in your linker path. If your Linux distribution have ICU 55 ( like Arch ), you can rebuild
   System.Globalization.Native.so  by yourself, or copy ICU 52 files from another distribution repository.
-  
+
   You also need DNX SDK ( coreclr+corefx )
   ( [Linux](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-linux.md), [OS X](https://github.com/dotnet/coreclr/blob/master/Documentation/install/get-dotnetcore-dnx-osx.md) )
-  and compiler with c++11 support. You will also need *Mono* to build example.
+  and *Mono* to build and run example.
 
 ## Compilation
-  Just link with dl, and remember to set c++11 flag.
+  Just link with dl, and remember to set c++11 and libstdc++fs flags
   ( because coreCLR is not compatible with libc++ )
 
-    clang++ -Wall -Wextra -Werror -ldl simpleCoreCLRHost.cpp -o SCCH
+    g++ -std=c++11 -Wall -Wextra -Werror simpleCoreCLRHost.cpp -o SCCH -ldl -lstdc++fs
   You can use other name that *SCCH* for output, this is just for example.
 
 ## Usage
@@ -42,6 +44,7 @@ You will get 0x80131040 error, because your assembly will get listed in Trusted 
 ## Example
 ### Building example
   First, set $SCCH_COREPATH variable in your shell to absolute path of **YOUR** directory with DNX dlls.
+  You also need to have g++53 in PATH ( make symlink to your g++ 5.3+ ).
   Mine is:
 
     export SCCH_COREPATH="$HOME/.dnx/runtimes/dnx-coreclr-darwin-x64.1.0.0-rc1-15838/bin"
