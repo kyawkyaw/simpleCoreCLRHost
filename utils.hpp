@@ -52,7 +52,7 @@ void AddFilesFromDirectoryToTpaList( std::string directory, std::string& tpaList
 
   // For all entries in the directory
   while ( (entry = readdir(dir)) != nullptr ) {
-    if ( entry->d_type == DT_UNKNOWN || entry->d_type == DT_UNKNOWN ) {
+    if ( entry->d_type == DT_LNK || entry->d_type == DT_UNKNOWN ) {
       std::string fullFilename;
 
       fullFilename.append(directory);
