@@ -7,6 +7,10 @@
   #error THIS SOFTWARE IS ONLY FOR UNIX-LIKE SYSTEMS!
 #endif
 
+#if not defined ( __GNUC__ ) || __GNUC__ < 5 || ( __GNUC__ == 5 && __GNUC_MINOR__ < 3 )
+  #error THIS SOFTWARE CURRENTLY BUILDS ONLY ON GCC 5.3 OR NEWER!
+#endif
+
 #include <functional>
 #include <iostream>
 #include <dlfcn.h>

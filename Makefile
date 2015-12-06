@@ -1,8 +1,17 @@
 ifndef SCCH_COREPATH
-$(error SCCH_COREPATH is not set!)
+  $(error SCCH_COREPATH is not set!)
 endif
 
-CPP = g++53
+OS_NAME = $(shell uname -s)
+ifeq ($(OS_NAME), Darwin)
+  CPP = g++-5
+  ifeq (, $(shell which $(CPP)))
+    $(error "$(CPP) not found! You need to install gcc (5.3) via Homebrew to build this!")
+	endif
+else
+  CPP = g++
+endif
+
 WARN_LEVEL = -Wall -Wextra -Werror
 C_STD = -std=c++11
 MCS = mcs
