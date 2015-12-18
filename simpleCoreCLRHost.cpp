@@ -28,19 +28,18 @@ int runFromEntryPoint(
   std::string tpaList;
   AddFilesFromDirectoryToTpaList( clrFilesAbsolutePath, tpaList );
 
-  void* coreclrLib = dlopen( coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL );
+  std::unique_ptr<dynamicLinker::dynamicLinker> dl = std::make_unique<dynamicLinker::dynamicLinker>( coreClrDllPath );
 
-  if ( coreclrLib == nullptr ) {
-    std::cerr << "ERROR: dlopen failed to open the " << coreClrDll << " with error: " << dlerror() << std::endl;
+  if( ! dl->open() ) {
+    std::cerr << "ERROR: dlopen failed to open the " << coreClrDllPath << " with error: " << dlerror() << std::endl;
     return -1;
   }
 
+  std::function<coreclrInitializeFunction> coreclr_initialize = dl->getFunction<coreclrInitializeFunction>("coreclr_initialize");
+  std::function<coreclrShutdownFunction> coreclr_shutdown = dl->getFunction<coreclrShutdownFunction>("coreclr_shutdown");
+  std::function<coreclrCreateDelegateFunction> coreclr_create_delegate = dl->getFunction<coreclrCreateDelegateFunction>("coreclr_create_delegate");
 
-  coreclrInitializeFunction coreclr_initialize = reinterpret_cast <coreclrInitializeFunction> (dlsym( coreclrLib, "coreclr_initialize" ));
-  coreclrShutdownFunction coreclr_shutdown = reinterpret_cast <coreclrShutdownFunction> (dlsym( coreclrLib, "coreclr_shutdown" ));
-  coreclrCreateDelegateFunction coreclr_create_delegate = reinterpret_cast <coreclrCreateDelegateFunction> ( dlsym( coreclrLib, "coreclr_create_delegate" ));
-
-  if ( coreclr_initialize == nullptr && coreclr_shutdown == nullptr && coreclr_create_delegate == nullptr ) {
+  if ( coreclr_initialize == nullptr || coreclr_shutdown == nullptr || coreclr_create_delegate == nullptr ) {
     std::cerr << "ERROR: Functions we need were not found in the libcoreclr.so" << std::endl;
     return -1;
   }
@@ -80,8 +79,9 @@ int runFromEntryPoint(
     return -1;
   }
 
-  csharp_runIt_t csharp_runIt;
-  void** csharp_runIt_ptr = reinterpret_cast<void**>(&csharp_runIt);
+  // Fancy modern C++ code. You can also just use void *.
+  auto del = []( __attribute__((unused)) csharp_runIt_t * ptr ) {};
+  std::unique_ptr<csharp_runIt_t, decltype(del)> csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
 
   // create delegate to our entry point
   status = coreclr_create_delegate (
@@ -90,7 +90,7 @@ int runFromEntryPoint(
     assemblyName.c_str(),
     entryPointType.c_str(),
     entryPointName.c_str(),
-    csharp_runIt_ptr
+    reinterpret_cast<void**>(&csharp_runIt)
   );
 
   if ( status < 0 ) {
@@ -98,19 +98,13 @@ int runFromEntryPoint(
     return -1;
   }
 
-  /*  I have to flush cout, or coreclr will crash. Bug?
-   *  EDIT: seems fixed
-   */
-  // std::cout << std::flush;
-
   myClass tmp = myClass();
   tmp.question();
 
   /*
    *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
    */
-
-  csharp_runIt( tmp, std::mem_fun_ref(&myClass::print) );
+  (*csharp_runIt)( tmp, std::mem_fun_ref(&myClass::print) );
 
   status = coreclr_shutdown ( hostHandle, domainId );
 
@@ -118,9 +112,6 @@ int runFromEntryPoint(
     std::cerr << "ERROR! coreclr_shutdown status: 0x" << std::hex << status << std::endl;
     return -1;
   }
-
-  if ( dlclose( coreclrLib ) != 0 )
-    std::cerr << "WARNING: dlclose of " << coreclrLib << " failed with error: " << dlerror() << std::endl;
 
   return 0;
 }

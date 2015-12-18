@@ -12,7 +12,7 @@ else
   CXX = g++
 endif
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++11
+CXXFLAGS = -Wall -Wextra -Werror -std=c++14
 LDLIBS = -ldl -lstdc++fs
 CSHARP = mcs
 CSHARPFLAGS = -noconfig -nostdlib -unsafe
@@ -22,8 +22,8 @@ CSHARPLIBS = -r:"$(SCCH_COREPATH)/mscorlib.dll" -r:"$(SCCH_COREPATH)/System.Runt
 
 all: SCCH Managed.dll Makefile
 
-SCCH: simpleCoreCLRHost.cpp simpleCoreCLRHost.hpp utils.hpp Makefile
-	$(CXX) $(CXXFLAGS) simpleCoreCLRHost.cpp -o SCCH $(LDLIBS)
+SCCH: simpleCoreCLRHost.cpp simpleCoreCLRHost.hpp utils.hpp Makefile dynamicLinker.cpp dynamicLinker.hpp
+	$(CXX) $(CXXFLAGS) simpleCoreCLRHost.cpp dynamicLinker.cpp -o SCCH $(LDLIBS)
 
 Managed.dll: Managed.cs Makefile
 	$(CSHARP) $(CSHARPFLAGS) -t:library -out:Managed.dll Managed.cs $(CSHARPLIBS)

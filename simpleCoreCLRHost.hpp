@@ -11,9 +11,11 @@
   #error THIS SOFTWARE CURRENTLY BUILDS ONLY ON GCC 5.3 OR NEWER!
 #endif
 
+#pragma once
+
 #include <functional>
 #include <iostream>
-#include <dlfcn.h>
+#include "dynamicLinker.hpp"
 
 // getcwd on Linux
 #include <unistd.h>
@@ -41,4 +43,4 @@ public:
   void print() { std::cout << "Value: " <<  value << std::endl; }
 };
 
-typedef void (*csharp_runIt_t)( myClass&, std::mem_fun_ref_t<void, myClass> );
+typedef void (csharp_runIt_t)( myClass&, std::mem_fun_ref_t<void, myClass> );
