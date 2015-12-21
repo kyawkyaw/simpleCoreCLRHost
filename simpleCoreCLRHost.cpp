@@ -28,88 +28,86 @@ int runFromEntryPoint(
   std::string tpaList;
   AddFilesFromDirectoryToTpaList( clrFilesAbsolutePath, tpaList );
 
-  std::unique_ptr<dynamicLinker::dynamicLinker> dl = std::make_unique<dynamicLinker::dynamicLinker>( coreClrDllPath );
+  auto dl = dynamicLinker::dynamicLinker::make_new( coreClrDllPath );
 
-  if( ! dl->open() ) {
-    std::cerr << "ERROR: dlopen failed to open the " << coreClrDllPath << " with error: " << dlerror() << std::endl;
-    return -1;
-  }
+  try {
+    dl->open();
+    auto coreclr_initialize = dl->getFunction<coreclrInitializeFunction>("coreclr_initialize");
+    auto coreclr_shutdown = dl->getFunction<coreclrShutdownFunction>("coreclr_shutdown");
+    auto coreclr_create_delegate = dl->getFunction<coreclrCreateDelegateFunction>("coreclr_create_delegate");
 
-  std::function<coreclrInitializeFunction> coreclr_initialize = dl->getFunction<coreclrInitializeFunction>("coreclr_initialize");
-  std::function<coreclrShutdownFunction> coreclr_shutdown = dl->getFunction<coreclrShutdownFunction>("coreclr_shutdown");
-  std::function<coreclrCreateDelegateFunction> coreclr_create_delegate = dl->getFunction<coreclrCreateDelegateFunction>("coreclr_create_delegate");
+    const char *propertyKeys[] = {
+        "TRUSTED_PLATFORM_ASSEMBLIES",
+        "APP_PATHS",
+        "APP_NI_PATHS",
+        "NATIVE_DLL_SEARCH_DIRECTORIES",
+        "AppDomainCompatSwitch"
+    };
 
-  if ( coreclr_initialize == nullptr || coreclr_shutdown == nullptr || coreclr_create_delegate == nullptr ) {
-    std::cerr << "ERROR: Functions we need were not found in the libcoreclr.so" << std::endl;
-    return -1;
-  }
+    const char *propertyValues[] = {
+        tpaList.c_str(),
+        managedAssemblyAbsoluteDir.c_str(),
+        managedAssemblyAbsoluteDir.c_str(),
+        nativeDllSearchDirs.c_str(),
+        "UseLatestBehaviorWhenTFMNotSpecified"
+    };
 
-  const char *propertyKeys[] = {
-      "TRUSTED_PLATFORM_ASSEMBLIES",
-      "APP_PATHS",
-      "APP_NI_PATHS",
-      "NATIVE_DLL_SEARCH_DIRECTORIES",
-      "AppDomainCompatSwitch"
-  };
+    void* hostHandle = NULL;
+    unsigned int domainId = 0;
 
-  const char *propertyValues[] = {
-      tpaList.c_str(),
-      managedAssemblyAbsoluteDir.c_str(),
-      managedAssemblyAbsoluteDir.c_str(),
-      nativeDllSearchDirs.c_str(),
-      "UseLatestBehaviorWhenTFMNotSpecified"
-  };
+    // initialize coreclr
+    int status = coreclr_initialize (
+      currentExeAbsolutePath.c_str(),
+      "simpleCoreCLRHost",
+      sizeof(propertyKeys) / sizeof(propertyKeys[0]),
+      propertyKeys,
+      propertyValues,
+      &hostHandle,
+      &domainId
+    );
 
-  void* hostHandle = NULL;
-  unsigned int domainId = 0;
+    if ( status < 0 ) {
+      std::cerr << "ERROR! coreclr_initialize status: 0x" << std::hex << status << std::endl;
+      return -1;
+    }
 
-  // initialize coreclr
-  int status = coreclr_initialize (
-    currentExeAbsolutePath.c_str(),
-    "simpleCoreCLRHost",
-    sizeof(propertyKeys) / sizeof(propertyKeys[0]),
-    propertyKeys,
-    propertyValues,
-    &hostHandle,
-    &domainId
-  );
+    // Fancy modern C++ code. You can also just use void *.
+    auto del = []( __attribute__((unused)) csharp_runIt_t * ptr ) {};
+    std::unique_ptr<csharp_runIt_t, decltype(del)> csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
 
-  if ( status < 0 ) {
-    std::cerr << "ERROR! coreclr_initialize status: 0x" << std::hex << status << std::endl;
-    return -1;
-  }
+    // create delegate to our entry point
+    status = coreclr_create_delegate (
+      hostHandle,
+      domainId,
+      assemblyName.c_str(),
+      entryPointType.c_str(),
+      entryPointName.c_str(),
+      reinterpret_cast<void**>(&csharp_runIt)
+    );
 
-  // Fancy modern C++ code. You can also just use void *.
-  auto del = []( __attribute__((unused)) csharp_runIt_t * ptr ) {};
-  std::unique_ptr<csharp_runIt_t, decltype(del)> csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
+    if ( status < 0 ) {
+      std::cerr << "ERROR! coreclr_create_delegate status: 0x" << std::hex << status << std::endl;
+      return -1;
+    }
 
-  // create delegate to our entry point
-  status = coreclr_create_delegate (
-    hostHandle,
-    domainId,
-    assemblyName.c_str(),
-    entryPointType.c_str(),
-    entryPointName.c_str(),
-    reinterpret_cast<void**>(&csharp_runIt)
-  );
+    myClass tmp = myClass();
+    tmp.question();
 
-  if ( status < 0 ) {
-    std::cerr << "ERROR! coreclr_create_delegate status: 0x" << std::hex << status << std::endl;
-    return -1;
-  }
+    /*
+     *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
+     */
+    (*csharp_runIt)( tmp, std::mem_fun_ref(&myClass::print) );
 
-  myClass tmp = myClass();
-  tmp.question();
+    status = coreclr_shutdown ( hostHandle, domainId );
 
-  /*
-   *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
-   */
-  (*csharp_runIt)( tmp, std::mem_fun_ref(&myClass::print) );
+    if ( status < 0 ) {
+      std::cerr << "ERROR! coreclr_shutdown status: 0x" << std::hex << status << std::endl;
+      return -1;
+    }
 
-  status = coreclr_shutdown ( hostHandle, domainId );
-
-  if ( status < 0 ) {
-    std::cerr << "ERROR! coreclr_shutdown status: 0x" << std::hex << status << std::endl;
+  } catch( dynamicLinker::dynamicLinkerException e ) {
+    std::cout << "Dynamic linker exception." << std::endl;
+    std::cerr << e.what() << std::endl;
     return -1;
   }
 

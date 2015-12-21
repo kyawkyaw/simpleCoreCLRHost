@@ -12,7 +12,7 @@ else
   CXX = g++
 endif
 
-CXXFLAGS = -Wall -Wextra -Werror -std=c++14
+CXXFLAGS = -Wall -Wextra -Werror -std=c++11
 LDLIBS = -ldl -lstdc++fs
 CSHARP = mcs
 CSHARPFLAGS = -noconfig -nostdlib -unsafe
@@ -22,10 +22,17 @@ CSHARPLIBS = -r:"$(SCCH_COREPATH)/mscorlib.dll" -r:"$(SCCH_COREPATH)/System.Runt
 
 all: SCCH Managed.dll Makefile
 
-SCCH: simpleCoreCLRHost.cpp simpleCoreCLRHost.hpp utils.hpp Makefile dynamicLinker.cpp dynamicLinker.hpp
-	$(CXX) $(CXXFLAGS) simpleCoreCLRHost.cpp dynamicLinker.cpp -o SCCH $(LDLIBS)
+SCCH: simpleCoreCLRHost.cpp simpleCoreCLRHost.hpp utils.hpp Makefile
+	git -C dynamicLinker pull || git clone https://github.com/Marqin/dynamicLinker
+	make -C dynamicLinker CXX=$(CXX)
+	$(CXX) $(CXXFLAGS) simpleCoreCLRHost.cpp dynamicLinker/dynamicLinker.o -o SCCH $(LDLIBS)
 
 Managed.dll: Managed.cs Makefile
 	$(CSHARP) $(CSHARPFLAGS) -t:library -out:Managed.dll Managed.cs $(CSHARPLIBS)
+
 clean:
 	rm -rf SCCH SCCH.dSYM Managed.dll
+	sh -c "stat dynamicLinker/ &> /dev/null && make -C dynamicLinker clean" || true
+
+distclean: clean
+	rm -rf dynamicLinker/

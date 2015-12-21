@@ -15,7 +15,7 @@
 
 #include <functional>
 #include <iostream>
-#include "dynamicLinker.hpp"
+#include "dynamicLinker/dynamicLinker.hpp"
 
 // getcwd on Linux
 #include <unistd.h>
