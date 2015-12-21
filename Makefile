@@ -1,6 +1,7 @@
-ifndef SCCH_COREPATH
-  $(error SCCH_COREPATH is not set!)
-endif
+#
+#  Copyright (c) Hubert Jarosz. All rights reserved.
+#  Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
 
 OS_NAME = $(shell uname -s)
 ifeq ($(OS_NAME), Darwin)
@@ -12,6 +13,7 @@ else
   CXX = g++
 endif
 
+SCCH_COREPATH = $(shell dirname $(shell which dnx))
 CXXFLAGS = -Wall -Wextra -Werror -std=c++11
 LDLIBS = -ldl -lstdc++fs
 CSHARP = mcs

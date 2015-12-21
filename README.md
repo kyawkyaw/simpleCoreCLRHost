@@ -43,11 +43,6 @@ You will get 0x80131040 error, because your assembly will get listed in Trusted 
 
 ## Example
 ### Building example
-  First, set $SCCH_COREPATH variable in your shell to absolute path of **YOUR** directory with DNX dlls.
-  You also need to have g++53 in PATH ( make symlink to your g++ 5.3+ ).
-  Mine is:
-
-    export SCCH_COREPATH="$HOME/.dnx/runtimes/dnx-coreclr-darwin-x64.1.0.0-rc1-15838/bin"
   Run make:
 
     make
@@ -55,4 +50,4 @@ You will get 0x80131040 error, because your assembly will get listed in Trusted 
 
 ### Running example
   Just run ./SCCH with proper arguments:
-    ./SCCH "$SCCH_COREPATH" ./Managed.dll Managed runIt
+    ./SCCH "$(dirname $(which dnx))" ./Managed.dll Managed runIt
