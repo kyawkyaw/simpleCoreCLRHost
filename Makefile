@@ -27,7 +27,7 @@ all: SCCH Managed.dll Makefile
 SCCH: simpleCoreCLRHost.cpp simpleCoreCLRHost.hpp utils.hpp Makefile
 	git -C dynamicLinker pull || git clone https://github.com/Marqin/dynamicLinker
 	make -C dynamicLinker CXX=$(CXX)
-	$(CXX) $(CXXFLAGS) simpleCoreCLRHost.cpp dynamicLinker/dynamicLinker.o -o SCCH $(LDLIBS)
+	$(CXX) $(CXXFLAGS) simpleCoreCLRHost.cpp -o SCCH -LdynamicLinker/ -ldynamicLinker $(LDLIBS)
 
 Managed.dll: Managed.cs Makefile
 	$(CSHARP) $(CSHARPFLAGS) -t:library -out:Managed.dll Managed.cs $(CSHARPLIBS)
