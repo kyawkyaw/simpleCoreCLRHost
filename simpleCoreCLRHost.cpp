@@ -29,85 +29,87 @@ int runFromEntryPoint(
   AddFilesFromDirectoryToTpaList( clrFilesAbsolutePath, tpaList );
 
   auto dl = dynamicLinker::dynamicLinker::make_new( coreClrDllPath );
+  auto coreclr_initialize = dl->getFunction<coreclrInitializeFunction>("coreclr_initialize");
+  auto coreclr_shutdown = dl->getFunction<coreclrShutdownFunction>("coreclr_shutdown");
+  auto coreclr_create_delegate = dl->getFunction<coreclrCreateDelegateFunction>("coreclr_create_delegate");
 
   try {
     dl->open();
-    auto coreclr_initialize = dl->getFunction<coreclrInitializeFunction>("coreclr_initialize");
-    auto coreclr_shutdown = dl->getFunction<coreclrShutdownFunction>("coreclr_shutdown");
-    auto coreclr_create_delegate = dl->getFunction<coreclrCreateDelegateFunction>("coreclr_create_delegate");
-
-    const char *propertyKeys[] = {
-        "TRUSTED_PLATFORM_ASSEMBLIES",
-        "APP_PATHS",
-        "APP_NI_PATHS",
-        "NATIVE_DLL_SEARCH_DIRECTORIES",
-        "AppDomainCompatSwitch"
-    };
-
-    const char *propertyValues[] = {
-        tpaList.c_str(),
-        managedAssemblyAbsoluteDir.c_str(),
-        managedAssemblyAbsoluteDir.c_str(),
-        nativeDllSearchDirs.c_str(),
-        "UseLatestBehaviorWhenTFMNotSpecified"
-    };
-
-    void* hostHandle = NULL;
-    unsigned int domainId = 0;
-
-    // initialize coreclr
-    int status = coreclr_initialize (
-      currentExeAbsolutePath.c_str(),
-      "simpleCoreCLRHost",
-      sizeof(propertyKeys) / sizeof(propertyKeys[0]),
-      propertyKeys,
-      propertyValues,
-      &hostHandle,
-      &domainId
-    );
-
-    if ( status < 0 ) {
-      std::cerr << "ERROR! coreclr_initialize status: 0x" << std::hex << status << std::endl;
-      return -1;
-    }
-
-    // Fancy modern C++ code. You can also just use void *.
-    auto del = []( __attribute__((unused)) csharp_runIt_t * ptr ) {};
-    std::unique_ptr<csharp_runIt_t, decltype(del)> csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
-
-    // create delegate to our entry point
-    status = coreclr_create_delegate (
-      hostHandle,
-      domainId,
-      assemblyName.c_str(),
-      entryPointType.c_str(),
-      entryPointName.c_str(),
-      reinterpret_cast<void**>(&csharp_runIt)
-    );
-
-    if ( status < 0 ) {
-      std::cerr << "ERROR! coreclr_create_delegate status: 0x" << std::hex << status << std::endl;
-      return -1;
-    }
-
-    myClass tmp = myClass();
-    tmp.question();
-
-    /*
-     *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
-     */
-    (*csharp_runIt)( tmp, std::mem_fun_ref(&myClass::print) );
-
-    status = coreclr_shutdown ( hostHandle, domainId );
-
-    if ( status < 0 ) {
-      std::cerr << "ERROR! coreclr_shutdown status: 0x" << std::hex << status << std::endl;
-      return -1;
-    }
-
+    coreclr_initialize.init();
+    coreclr_shutdown.init();
+    coreclr_create_delegate.init();
   } catch( dynamicLinker::dynamicLinkerException e ) {
     std::cout << "Dynamic linker exception." << std::endl;
     std::cerr << e.what() << std::endl;
+    return -1;
+  }
+
+  const char *propertyKeys[] = {
+      "TRUSTED_PLATFORM_ASSEMBLIES",
+      "APP_PATHS",
+      "APP_NI_PATHS",
+      "NATIVE_DLL_SEARCH_DIRECTORIES",
+      "AppDomainCompatSwitch"
+  };
+
+  const char *propertyValues[] = {
+      tpaList.c_str(),
+      managedAssemblyAbsoluteDir.c_str(),
+      managedAssemblyAbsoluteDir.c_str(),
+      nativeDllSearchDirs.c_str(),
+      "UseLatestBehaviorWhenTFMNotSpecified"
+  };
+
+  void* hostHandle = NULL;
+  unsigned int domainId = 0;
+
+  // initialize coreclr
+  int status = coreclr_initialize (
+    currentExeAbsolutePath.c_str(),
+    "simpleCoreCLRHost",
+    sizeof(propertyKeys) / sizeof(propertyKeys[0]),
+    propertyKeys,
+    propertyValues,
+    &hostHandle,
+    &domainId
+  );
+
+  if ( status < 0 ) {
+    std::cerr << "ERROR! coreclr_initialize status: 0x" << std::hex << status << std::endl;
+    return -1;
+  }
+
+  // Fancy modern C++ code. You can also just use void *.
+  auto del = []( __attribute__((unused)) csharp_runIt_t * ptr ) {};
+  std::unique_ptr<csharp_runIt_t, decltype(del)> csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
+
+  // create delegate to our entry point
+  status = coreclr_create_delegate (
+    hostHandle,
+    domainId,
+    assemblyName.c_str(),
+    entryPointType.c_str(),
+    entryPointName.c_str(),
+    reinterpret_cast<void**>(&csharp_runIt)
+  );
+
+  if ( status < 0 ) {
+    std::cerr << "ERROR! coreclr_create_delegate status: 0x" << std::hex << status << std::endl;
+    return -1;
+  }
+
+  myClass tmp = myClass();
+  tmp.question();
+
+  /*
+   *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
+   */
+  (*csharp_runIt)( tmp, std::mem_fun_ref(&myClass::print) );
+
+  status = coreclr_shutdown ( hostHandle, domainId );
+
+  if ( status < 0 ) {
+    std::cerr << "ERROR! coreclr_shutdown status: 0x" << std::hex << status << std::endl;
     return -1;
   }
 
@@ -168,6 +170,8 @@ int main( int argc, char* argv[] ) {
 
   if ( exitCode < 0 )
     std::cout << "Exit Code: " << exitCode << std::endl;
+
+
 
 
   return 0;
