@@ -38,8 +38,16 @@ int runFromEntryPoint(
     coreclr_initialize.init();
     coreclr_shutdown.init();
     coreclr_create_delegate.init();
-  } catch( dynamicLinker::dynamicLinkerException e ) {
-    std::cout << "Dynamic linker exception." << std::endl;
+  } catch ( dynamicLinker::openException e ) {
+    std::cerr << "Cannot find " << coreClrDll << "Path that was searched: "
+              << coreClrDllPath << std::endl;
+    std::cerr << e.what() << std::endl;
+    return -1;
+  } catch ( dynamicLinker::symbolException e ) {
+    std::cerr << "Probably your libcoreclr is broken or too old." << std::endl;
+    std::cerr << e.what() << std::endl;
+    return -1;
+  } catch ( dynamicLinker::dynamicLinkerException e ) {
     std::cerr << e.what() << std::endl;
     return -1;
   }
@@ -62,17 +70,23 @@ int runFromEntryPoint(
 
   void* hostHandle = NULL;
   unsigned int domainId = 0;
+  int status = -1;
 
   // initialize coreclr
-  int status = coreclr_initialize (
-    currentExeAbsolutePath.c_str(),
-    "simpleCoreCLRHost",
-    sizeof(propertyKeys) / sizeof(propertyKeys[0]),
-    propertyKeys,
-    propertyValues,
-    &hostHandle,
-    &domainId
-  );
+  try {
+    status = coreclr_initialize (
+      currentExeAbsolutePath.c_str(),
+      "simpleCoreCLRHost",
+      sizeof(propertyKeys) / sizeof(propertyKeys[0]),
+      propertyKeys,
+      propertyValues,
+      &hostHandle,
+      &domainId
+    );
+  } catch ( dynamicLinker::dynamicLinkerException e ) {
+    std::cerr << e.what() << std::endl;
+    return -1;
+  }
 
   if ( status < 0 ) {
     std::cerr << "ERROR! coreclr_initialize status: 0x" << std::hex << status << std::endl;
@@ -83,15 +97,20 @@ int runFromEntryPoint(
   auto del = []( __attribute__((unused)) csharp_runIt_t * ptr ) {};
   std::unique_ptr<csharp_runIt_t, decltype(del)> csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
 
-  // create delegate to our entry point
-  status = coreclr_create_delegate (
-    hostHandle,
-    domainId,
-    assemblyName.c_str(),
-    entryPointType.c_str(),
-    entryPointName.c_str(),
-    reinterpret_cast<void**>(&csharp_runIt)
-  );
+  try {
+    // create delegate to our entry point
+    status = coreclr_create_delegate (
+      hostHandle,
+      domainId,
+      assemblyName.c_str(),
+      entryPointType.c_str(),
+      entryPointName.c_str(),
+      reinterpret_cast<void**>(&csharp_runIt)
+    );
+  } catch ( dynamicLinker::dynamicLinkerException e ) {
+    std::cerr << e.what() << std::endl;
+    return -1;
+  }
 
   if ( status < 0 ) {
     std::cerr << "ERROR! coreclr_create_delegate status: 0x" << std::hex << status << std::endl;
@@ -106,7 +125,12 @@ int runFromEntryPoint(
    */
   (*csharp_runIt)( tmp, std::mem_fun_ref(&myClass::print) );
 
-  status = coreclr_shutdown ( hostHandle, domainId );
+  try {
+    status = coreclr_shutdown ( hostHandle, domainId );
+  } catch ( dynamicLinker::dynamicLinkerException e ) {
+    std::cerr << e.what() << std::endl;
+    return -1;
+  }
 
   if ( status < 0 ) {
     std::cerr << "ERROR! coreclr_shutdown status: 0x" << std::hex << status << std::endl;
