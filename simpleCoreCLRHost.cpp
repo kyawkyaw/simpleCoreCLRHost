@@ -95,7 +95,7 @@ int runFromEntryPoint(
 
   // Fancy modern C++ code. You can also just use void *.
   auto del = []( __attribute__((unused)) csharp_runIt_t * ptr ) {};
-  std::unique_ptr<csharp_runIt_t, decltype(del)> csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
+  auto csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
 
   try {
     // create delegate to our entry point
@@ -147,13 +147,7 @@ int main( int argc, char* argv[] ) {
     return 0;
   }
 
-  char _cwd[PATH_MAX];
-  if ( !getcwd(_cwd, sizeof(_cwd)) ) {
-    std::cerr << "ERROR: Cannot get CWD!" << std::endl;
-    return 1;
-  }
-
-  std::string cwd(_cwd);
+  std::string cwd = SCCH_fs::current_path();
   cwd += "/";
 
   std::string assemblyName(argv[2]);
@@ -194,8 +188,6 @@ int main( int argc, char* argv[] ) {
 
   if ( exitCode < 0 )
     std::cout << "Exit Code: " << exitCode << std::endl;
-
-
 
 
   return 0;
