@@ -14,7 +14,7 @@ else
 endif
 
 SCCH_COREPATH = $(shell dirname $(shell which dnx))
-CXXFLAGS = -Wall -Wextra -Werror -std=c++11
+CXXFLAGS = -Wall -Wextra -Werror -std=c++14
 LDLIBS = -ldl -lstdc++fs
 CSHARP = mcs
 CSHARPFLAGS = -noconfig -nostdlib -unsafe

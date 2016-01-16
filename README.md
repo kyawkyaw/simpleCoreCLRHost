@@ -16,10 +16,10 @@
   and *Mono* to build and run example.
 
 ## Compilation
-  Just link with dl, and remember to set c++11 and libstdc++fs flags
+  Just link with dl, and remember to set c++14 and libstdc++fs flags
   ( because coreCLR is not compatible with libc++ )
 
-    g++ -std=c++11 -Wall -Wextra -Werror simpleCoreCLRHost.cpp -o SCCH -ldl -lstdc++fs
+    g++ -std=c++14 -Wall -Wextra -Werror simpleCoreCLRHost.cpp -o SCCH -ldl -lstdc++fs
   You can use other name that *SCCH* for output, this is just for example.
 
 ## Usage

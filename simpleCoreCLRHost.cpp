@@ -94,8 +94,8 @@ int runFromEntryPoint(
   }
 
   // Fancy modern C++ code. You can also just use void *.
-  auto del = []( __attribute__((unused)) csharp_runIt_t * ptr ) {};
-  auto csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(del)>(nullptr, del);
+  auto no_del = []( auto x ) { (void)(x); };
+  auto csharp_runIt = std::unique_ptr<csharp_runIt_t, decltype(no_del)>(nullptr, no_del);
 
   try {
     // create delegate to our entry point
@@ -121,7 +121,8 @@ int runFromEntryPoint(
   tmp.question();
 
   /*
-   *  If arguments are in in different order then second arg is 0 in C#. Dunno why.
+   *  If arguments are in in different order then second arg is 0 in C#.
+   *  probably something with padding/offset/ptr byte size
    */
   (*csharp_runIt)( tmp, std::mem_fun_ref(&myClass::print) );
 
