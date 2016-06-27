@@ -5,9 +5,9 @@
 
 OS_NAME = $(shell uname -s)
 ifeq ($(OS_NAME), Darwin)
-  CXX = g++-5
+  CXX = g++-6
   ifeq (, $(shell which $(CPP)))
-    $(error "$(CPP) not found! You need to install gcc (5.3) via Homebrew to build this!")
+    $(error "$(CPP) not found! You need to install gcc 6 via Homebrew to build this!")
 	endif
 else
   CXX = g++
